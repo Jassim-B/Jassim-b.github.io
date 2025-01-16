@@ -1,4 +1,4 @@
-const event_rate = 0.4;
+const event_rate = 0.6;
 const beggining_of_events_lap = 4;
 const events_list = [
     {
