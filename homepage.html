@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="style.css">
+        <title>Impulsion</title>
+        <script src='https://cdn.plot.ly/plotly-2.35.2.min.js'></script>
+        <script src="events.js"></script>
+    </head>
+    <body>
+        <center>
+            <h1>Le développement durable</h1>
+            <div class="" id="start-menu">
+                <div>
+                    <label for="number" >Nombre d'équipes</label>
+                    <input type="number" min="1" value="3" id="nb_players">
+                </div>
+                <button onclick="initializeGame()">Démarrer</button>
+            </div>
+            <div class="hidden" id="play-menu">
+                <div id='plot-div'></div>
+                <div id="options">
+                    <div id="lap-summary">
+                        <h2 id="lap">Tour 0 (résumé)</h2>
+                        <div class="event hidden" id="event_frame">
+                            <p class="lap-expl">(Evenement pour le prochain tour)</p>
+                            <h2 id="event-title">Titre (1/2)</h2>
+                            <p class="desc" id="event-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </p>
+                            <p class="effect" id="event-effect-desc">...</p>
+                        </div>
+                        <div id="event_reward_display" class="hidden">
+                            <p class="desc" id="event-reward-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </p>
+                        </div>
+                        <button onclick="newLap()">Lancer le tour suivant</button>
+                    </div>
+                    <div id="lap-options" class="hidden">
+                        <h2 id="lap-display">Tour ...</h2>
+                        <h3 id="team-turn">Autour de l'équipe ... de jouer</h3>
+                        <div class="table">
+                            <div class="column">
+                                <p>🌳</p>
+                                <input type="number" value="0" id="env_score_add">
+                            </div>
+                            <div class="column">
+                                <p>🚶</p>
+                                <input type="number" value="0" id="social_score_add">
+                            </div>
+                            <div class="column">
+                                <p>💵</p>
+                                <input type="number" value="0" id="money_score_add">
+                            </div>
+                        </div>
+                        <button onclick="nextTeam()">Equipe suivante</button>
+                    </div>
+                </div>
+            </div>
+        </center>
+    </body>
+    <script>
+        var env_score = [];
+        var social_score = [];
+        var money_score = [];
+        var lap = 0;
+        var player_turn = 0;
+        var city_names = [];
+        var event_index = -1;
+        var event_duration = 0;
+
+        function getRndInteger(min, max) {
+            return Math.floor(Math.random() * (max - min) ) + min;
+        } 
+
+        function initializeGame(){
+            env_score = [];
+            social_score = [];
+            money_score = [];
+            city_names = [];
+            const nb_players = document.getElementById("nb_players").value;
+            if(nb_players <= 0){
+                alert("Merci d'entrer un nombre d'équipes positif !");
+                return;
+            }
+            for(let n=0; n<nb_players; n++){
+                env_score.push(0);
+                social_score.push(0);
+                money_score.push(0);
+                let equip_name = prompt("Entrer le nom de la ville de l'équipe " + (n+1).toString());
+                if(equip_name == "" || equip_name == null){
+                    equip_name = "Ville " + (n+1).toString();
+                }
+                city_names.push(equip_name);
+            };
+            document.getElementById("start-menu").classList.add("hidden");
+            document.getElementById("play-menu").classList.remove("hidden");
+            displayScoreOfAllTeams();
+        }
+
+        function randomEvent(){
+            if(lap >= beggining_of_events_lap && event_index == -1){
+                const rnd  = Math.random();
+                if(rnd <= event_rate){
+                    const event_picked = getRndInteger(0, events_list.length);
+                    activateEvent(event_picked);
+                }
+                else{
+                    event_index = -1;
+                }
+            }
+        }
+
+        function activateEvent(event_picked){
+            event_duration = 0;
+            document.getElementById("event-title").innerText = events_list[event_picked]["Title"] + " (1/"+events_list[event_picked]["Duration"]+")";
+            document.getElementById("event-desc").innerText = events_list[event_picked]["Description"];
+            document.getElementById("event-effect-desc").innerText = events_list[event_picked]["Effect desc"];
+            document.getElementById("event_frame").classList.remove("hidden");
+            event_index = event_picked;
+        }
+
+        function processEvent(){
+            event_duration += 1;
+            if(event_index >= 0){
+                document.getElementById("event_frame").classList.remove("hidden");
+                if(event_duration >= events_list[event_index]["Duration"]){
+                    activateEventEffect();
+                    document.getElementById("event_frame").classList.add("hidden");
+                    event_index = -1;
+                    return true;
+                }
+                document.getElementById("event-title").innerText = events_list[event_index]["Title"] + " ("+(event_duration+1).toString()+"/"+events_list[event_index]["Duration"]+")";
+                if(events_list[event_index]["Effect activation"] == "after each round"){
+                    activateEventEffect();
+                }
+            }
+            else{
+                document.getElementById("event_frame").classList.add("hidden");
+            }
+            return false;
+        }
+
+        function activateEventEffect(){
+            // Calculation of the scores of each city for the right criteria.
+            var scores = {"environment" : env_score, "social" : social_score, "money" : money_score};
+            let effect = events_list[event_index]["Effect"];
+            let data_list = scores[effect["Eval Asset"]];
+            let score_team = [];
+            for(let n=0; n<data_list.length; n++){
+                score_team.push({
+                    "index" : n,
+                    "name" : city_names[n],
+                    "score" : data_list[n],
+                })
+            }
+            score_team.sort(function(a,b) {
+             return b.score - a.score
+            });
+            let winner;
+
+            // Calculation of the target score.
+            let winning_score = -1;
+            let winning_side = "up";
+            if(effect["Target"] == "worst"){
+                winning_score = score_team[score_team.length - 1]["score"];
+                winning_side = "down";
+            }
+            else if(effect["Target"] == "best"){
+                winning_score = score_team[0]["score"];
+            }
+            else if(effect["Target"] == "threshold"){
+                winning_score = effect["Treshold"];
+                winning_side = effect["Threshold dir"];
+            }
+            else if(effect["Target"] == "auto"){
+                winning_score = -10000000;
+                winning_side = "up";
+            };
+            
+            // Calculation of the winners.
+            let winners = [];
+            for(let n=0;n<score_team.length;n++){
+                if(
+                    (winning_side == "up" && score_team[n]["score"] >= winning_score) ||
+                    (winning_side == "down" && score_team[n]["score"] <= winning_score)
+                ){
+                    winners.push(score_team[n]["index"])
+                }
+            }
+            console.log(score_team)
+            console.log(winners);
+            console.log(winning_score);
+            console.log(winning_side);
+
+            // Giving of the reward.
+            let winner_list_str = "";
+            for(let n=0; n<winners.length; n++){
+                winner = winners[n];
+                if(effect["Reward Asset"] == "environment"){
+                    env_score[winner] += effect["Increment"];
+                }
+                else if(effect["Reward Asset"] == "social"){
+                    social_score[winner] += effect["Increment"];
+                }
+                else if(effect["Reward Asset"] == "money"){
+                    money_score[winner] += effect["Increment"];
+                }
+                winner_list_str += "\""+city_names[winner] + "\", ";
+            }
+
+            // Display of the reward.
+            if(winners.length > 0){
+                document.getElementById("event_reward_display").classList.remove("hidden");
+                let logo = {"environment" : "🌳", "social" : "🚶", "money" : "💵"}[effect["Reward Asset"]]
+                let sign = "";
+                if(effect["Increment"] >= 0){
+                    sign = "+";
+                }
+                document.getElementById("event-reward-desc").innerText = "Récompense d'évènement :"+ sign + effect["Increment"].toString()+ logo + " pour " + winner_list_str;
+            }
+        }
+        
+        function newLap(){
+            lap++;
+            player_turn = -1;
+            document.getElementById("lap-summary").classList.add("hidden");
+            document.getElementById("lap-display").innerText= "Tour " + lap.toString();
+            document.getElementById("team-turn").innerText= "Autour de l'équipe " + (player_turn+1).toString() + " de jouer";
+            document.getElementById("lap-options").classList.remove("hidden");
+            document.getElementById("event_reward_display").classList.add("hidden");
+            nextTeam();
+        }
+
+        function endOfLap(){
+            let event_ended = processEvent();
+            if(!event_ended){
+                randomEvent();
+            }
+            document.getElementById("lap").innerText = "Tour " + lap.toString() + " (résumé)";
+            document.getElementById("lap-summary").classList.remove("hidden");
+            document.getElementById("lap-options").classList.add("hidden");   
+            displayScoreOfAllTeams();
+        }
+
+        function nextTeam(){
+            if(player_turn >= 0){
+                let env_incr = parseInt(document.getElementById("env_score_add").value);
+                let social_incr = parseInt(document.getElementById("social_score_add").value);
+                let money_incr = parseInt(document.getElementById("money_score_add").value);
+                env_score[player_turn] += env_incr;
+                social_score[player_turn] += social_incr;
+                money_score[player_turn] += money_incr;
+                document.getElementById("env_score_add").value = 0;
+                document.getElementById("social_score_add").value = 0;
+                document.getElementById("money_score_add").value = 0;
+            }
+            player_turn += 1;
+            if(player_turn == money_score.length){
+                endOfLap();
+            }
+            else{
+                displayScoreOfTeam(player_turn);
+                document.getElementById("team-turn").innerText= "Autour de \"" + city_names[player_turn] + "\" de jouer";
+            }
+        }
+        
+        function displayScoreOfAllTeams(){
+                var data = [];
+                for(let n=0; n<env_score.length; n++){
+                    var trace = {
+                        x: ['🌳', '🚶', '💵'],
+                        y: [env_score[n], social_score[n], money_score[n]],
+                        name: city_names[n],
+                        type: 'bar'
+                    };
+                    data.push(trace);
+                }
+                var layout = {barmode: 'group', title: 'Score de toutes les équipes'};
+                Plotly.newPlot('plot-div', data, layout);
+            }
+
+        function displayScoreOfTeam(n){
+            var data = [
+                {
+                    x: ['env_score', 'social_score', 'money_score'],
+                    y: [env_score[n], social_score[n], money_score[n]],
+                    type: 'bar'
+                }
+            ];
+            Plotly.newPlot('plot-div', data, {title : "Scores de \"" + city_names[n] + "\"\n"});
+        }
+    </script>
+</html>

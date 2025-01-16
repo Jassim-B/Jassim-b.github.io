@@ -1,0 +1,99 @@
+body{
+    background-color: rgb(204, 255, 204);
+}
+
+h1{ 
+    text-decoration: underline;
+}
+
+.hidden{
+    visibility: hidden;
+    position: absolute;
+}
+
+#start-menu{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 400px;
+}
+
+#play-menu{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap : 24px;
+}
+
+
+#plot-div{
+    width:100%;
+    max-width:700px;
+    height: 500px;
+    background-color: white;
+    border-radius: 16px;
+}
+
+.table {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 16px;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.column{
+    display: flex;
+    flex-direction: column;
+}
+
+.column input{
+    width: 80px;
+}
+
+.event{
+    width: 500px;
+    height: 250px;
+    background-color: green;
+    margin: 16px 0;
+    border-radius: 16px;
+}
+
+#event_reward_display{
+    width: 500px;
+    height: 100px;
+    background-color: lightyellow;
+    margin-bottom: 16px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: black;
+}
+
+.event h2{
+    color :white;
+    padding: 0 0 16px 0;
+}
+
+.lap-expl{
+    color :white;
+    margin-top: 16px;
+}
+
+.desc{
+    color: white;
+    font-style: italic;
+}
+
+#event_reward_display .desc{
+    color: black;
+}
+
+.effect{
+    background-color: lightgreen;
+    margin: 0 16px;
+    padding: 16px 16px;
+}
